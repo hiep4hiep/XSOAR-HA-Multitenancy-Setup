@@ -44,25 +44,34 @@ There is plenty of options for NFS, either on Windows, Linux or any public cloud
 
 **Step 1**: have yourself a clean Linux server. In this guide, I use Ubuntu 18.04
 **Step 2**: install NFS server
+```
 sudo apt update
 sudo apt install nfs-kernel-server
+```
 
 **Step 3**: create a folder to share
 XSOAR app with need to have read & write access to /var/lib/demisto (which is mounted to NFS folder). You can create any folder on NFS to share for this purpose, but I recommended to create an exact name to be easier to manage.
+```
 sudo mkdir /var/lib/demisto -p
+```
 
 **Step 4**: change owner to nobody:nogroup
 As NFS will translate any root operation on client to nobody:nogroup credential, we need to chown the directory:
+```
 sudo chown nobody:nogroup /var/lib/demisto
+```
 
 **Step 5**: share the folder for XOAR app server access
 Sudo vi /etc/exports
 Then add one line to the file for the export purpose
+```
 /var/lib/demisto    172.17.2.4(rw,sync,no_root_squash,no_subtree_check) 172.17.2.6(rw,sync,no_root_squash,no_subtree_check)
+```
 
 In this setup, 172.17.2.4 and 172.17.2.6 are XSOAR App 01 and XSOAR App 02 server. Make sure the no_root_squash is added the the attribute list because it is important for XSOAR app credential to write to this folder.
+
 **Step 6**: restart the NFS service and check status
-systemctl restart nfs-kernel-server
+`systemctl restart nfs-kernel-server`
 Check your nfs-kernel-server status is running and use netstat to check if TCP 2049 is now listening on NFS server.
 
 ## Installing ElasticSearch cluster
@@ -77,30 +86,44 @@ And please be noted that we will use only Master node and Data node in our clust
 
 Step 1: have yourself a clean Linux server. In this guide, I use Ubuntu 18.04
 Step 2: Install Java
-`sudo apt-get update
-sudo apt-get install default-jre`
+```
+sudo apt-get update
+sudo apt-get install default-jre
+```
 And check java version
-`#java --version
+```
+#java --version
 openjdk 11.0.10 2021-01-19
 OpenJDK Runtime Environment (build 11.0.10+9-Ubuntu-0ubuntu1.18.04)
-OpenJDK 64-Bit Server VM (build 11.0.10+9-Ubuntu-0ubuntu1.18.04, mixed mode, sharing)`
+OpenJDK 64-Bit Server VM (build 11.0.10+9-Ubuntu-0ubuntu1.18.04, mixed mode, sharing)
+```
 Step 3: Import ElasticSearch PGP key
-`wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add –`
+```
+wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add –
+```
 
 Step 4: Install apt-transport-https to get from ES server
-`sudo apt-get install apt-transport-https`
+```
+sudo apt-get install apt-transport-https
+```
 
 Step 5: Add ES 7.x repo
-`echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-7.x.list`
+```
+echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-7.x.list
+```
 
 Step 6: Install ElasticSearch
-`sudo apt-get update && sudo apt-get install elasticsearch`
+```
+sudo apt-get update && sudo apt-get install elasticsearch
+```
 Step 7: configure ElasticSearch cluster parameter
 Please make sure you finish this step before starting your ElasticSearch service.
-`sudo vi /etc/elasticsearch/elasticsearch.yml`
+```
+sudo vi /etc/elasticsearch/elasticsearch.yml
+```
 
 Add these lines to your configuration file on Node-1
-`
+```
 #Set cluster name identical in all of the 3 servers
 cluster.name: xsoar-db
 #Node name will be node-1, node-2 and node-3
@@ -124,11 +147,13 @@ discovery.seed_hosts: ["172.17.4.4", "172.17.4.5", "172.17.4.3"]
 #
 #Select master nodes
 cluster.initial_master_nodes: ["node-1", "node-2", "node-3"]
-#`
+#
+```
 
 Add these lines to your configuration file on Node-2
 
-`#Set cluster name identical in all of the 3 servers
+```
+#Set cluster name identical in all of the 3 servers
 cluster.name: xsoar-db
 #Node name will be node-1, node-2 and node-3
 node.name: node-2
@@ -152,11 +177,12 @@ discovery.seed_hosts: ["172.17.4.4", "172.17.4.5", "172.17.4.3"]
 #Select master nodes
 cluster.initial_master_nodes: ["node-1", "node-2", "node-3"]
 #
-`
+```
 
 Add these lines to your configuration file on Node-3
 
-`#Set cluster name identical in all of the 3 servers
+```
+#Set cluster name identical in all of the 3 servers
 cluster.name: xsoar-db
 #Node name will be node-1, node-2 and node-3
 node.name: node-3
@@ -180,18 +206,25 @@ discovery.seed_hosts: ["172.17.4.4", "172.17.4.5", "172.17.4.3"]
 #Select master nodes
 cluster.initial_master_nodes: ["node-1", "node-2", "node-3"]
 #
-`
+```
 Step 8: Start ElasticSearch
-`sudo service elasticsearch start`
+```
+sudo service elasticsearch start
+```
 
 Step 9: Verify the service
 Make sure the service is up and running
-`systemctl status elasticsearch`
+```
+systemctl status elasticsearch
+```
 
 Then verify your cluster status
-`curl -XGET 'http://localhost:9200/_cluster/state?pretty'`
+```
+curl -XGET 'http://localhost:9200/_cluster/state?pretty'
+```
 You should get similar output
-`{
+```
+{
   "cluster_name" : "xsoar-db",
   "cluster_uuid" : "v0cPjnYDTFirhLLJFWAnrw",
   "version" : 404,
@@ -224,7 +257,7 @@ You should get similar output
       }
     }
   },
-`
+```
 
 ## Install XSOAR Application
 Next part will be installing the XSOAR Application server. At this stage, I think everything is straightforward to you as we have already had:
@@ -235,14 +268,19 @@ So before install XSOAR application, we will need to make sure XSOAR server can 
 **Step 1**: have yourself a clean Linux server. In this guide, I use Ubuntu 18.04
 **Step 2**: Setup NFS client
 We need to do this because XSOAR App server will be NFS client to mount and access shared folder on NFS server.
-`sudo apt update
-sudo apt install nfs-common`
+```
+sudo apt update
+sudo apt install nfs-common
+```
 **Step 3**: Create /var/lib/demisto folder and mount to NFS
-`sudo mkdir -p /var/lib/demisto
-sudo mount 172.17.2.7:/var/lib/demisto /var/lib/demisto`
+```
+sudo mkdir -p /var/lib/demisto
+sudo mount 172.17.2.7:/var/lib/demisto /var/lib/demisto
+```
 (the 1st :/var/lib/demisto is the source path from NFS server, the 2nd /var/lib/demisto is the local folder on XSOAR server)
 And check if it’s there
-`xsoar-app1:~$ df -h
+```
+xsoar-app1:~$ df -h
 Filesystem                   Size  Used Avail Use% Mounted on
 udev                         3.9G     0  3.9G   0% /dev
 tmpfs                        797M  784K  796M   1% /run
@@ -252,28 +290,36 @@ tmpfs                        5.0M     0  5.0M   0% /run/lock
 tmpfs                        3.9G     0  3.9G   0% /sys/fs/cgroup
 /dev/sda15                   105M  6.1M   99M   6% /boot/efi
 172.17.2.7:/var/lib/demisto   29G  6.8G   23G  24% /var/lib/demisto
+```
 
 Make it survives boot by adding to /etc/fstab
 
-172.17.2.7:/var/lib/demisto    /var/lib/demisto   nfs auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0`
+`172.17.2.7:/var/lib/demisto    /var/lib/demisto   nfs auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0`
 
 
 **Step 4**: Install the XSOAR application
 Now it’s good to install the XSOAR application. Just follow below simple steps with internet connection and the server will be installed in about 10-15 mins.
-`wget -O demisto.sh "[direct download link]"
+```
+wget -O demisto.sh "[direct download link]"
 
-chmod +x demisto.sh`
+chmod +x demisto.sh
+```
 
 For multi-tenancy deployment
-`sudo ./demisto.sh -- -y -multi-tenant -elasticsearch-url=http://172.16.4.3:9200,http://172.16.4.4:9200,http://172.16.4.5:9200`
+```
+sudo ./demisto.sh -- -y -multi-tenant -elasticsearch-url=http://172.16.4.3:9200,http://172.16.4.4:9200,http://172.16.4.5:9200
+```
 
 For single-tenancy deployment
-`sudo ./demisto.sh -- -y -elasticsearch-url=http://172.16.4.3:9200,http://172.16.4.4:9200,http://172.16.4.5:9200`
+```
+sudo ./demisto.sh -- -y -elasticsearch-url=http://172.16.4.3:9200,http://172.16.4.4:9200,http://172.16.4.5:9200
+```
 
 (if you have another load balancer for Elasticsearch, put the LB IP address as -elasticsearch-url value)
 
 **Step 5**: Verify the installation
-`xsoar-app1:~$ systemctl status demisto
+```
+xsoar-app1:~$ systemctl status demisto
 ● demisto.service - Demisto Server Service
    Loaded: loaded (/etc/systemd/system/demisto.service; enabled; vendor preset: enabled)
    Active: active (running) since Sun 2021-03-14 22:53:16 UTC; 6h ago
@@ -281,12 +327,15 @@ For single-tenancy deployment
     Tasks: 23 (limit: 4915)
    CGroup: /system.slice/demisto.service
  ├─1273 /usr/local/demisto/server
- └─3936 docker run -i --rm --name demistoserver_pyexec-6ef6ce82-023d-4f39-8dce-e827679d5826-demistopython1.3-alpine--1 --env HTTP_PROXY= --env http_proxy= --env HTTPS_PROXY= --env https_proxy= --log-drive`
+ └─3936 docker run -i --rm --name demistoserver_pyexec-6ef6ce82-023d-4f39-8dce-e827679d5826-demistopython1.3-alpine--1 --env HTTP_PROXY= --env http_proxy= --env HTTPS_PROXY= --env https_proxy= --log-drive
+ ```
 
 If the status is Stopped (not running), most likely the problem came from permission issue of the /var/lib/demisto.
 You can fix with
-`sudo chown -R demisto:demisto /var/lib/demisto
-sytemctl start demisto`
+```
+sudo chown -R demisto:demisto /var/lib/demisto
+sytemctl start demisto
+```
 
 
 ## Multi tenancy set up
@@ -324,14 +373,19 @@ You will get a demisto-xxxx.sh file downloaded to your computer.
 - But there will be something to prepare as below sub steps if you choose to have multiple Host in the same HA Group. 
 Step 4.1: Setup NFS client
 We need to do this because XSOAR Host server will be NFS client to mount and access shared folder on NFS server.
-`sudo apt update
-sudo apt install nfs-common`
+```
+sudo apt update
+sudo apt install nfs-common
+```
 Step 4.2: Create /var/lib/demisto folder and mount to NFS
-`sudo mkdir -p /var/lib/demisto2
-sudo mount 172.17.2.7:/var/lib/demisto2 /var/lib/demisto`
+```
+sudo mkdir -p /var/lib/demisto2
+sudo mount 172.17.2.7:/var/lib/demisto2 /var/lib/demisto
+```
 
 And check if it’s there
-`xsoar-app1:~$ df -h
+```
+xsoar-host11:~$ df -h
 Filesystem                   Size  Used Avail Use% Mounted on
 udev                         3.9G     0  3.9G   0% /dev
 tmpfs                        797M  784K  796M   1% /run
@@ -340,13 +394,16 @@ tmpfs                        3.9G     0  3.9G   0% /dev/shm
 tmpfs                        5.0M     0  5.0M   0% /run/lock
 tmpfs                        3.9G     0  3.9G   0% /sys/fs/cgroup
 /dev/sda15                   105M  6.1M   99M   6% /boot/efi
-172.17.2.7:/var/lib/demisto2   29G  6.8G   23G  24% /var/lib/demisto`
+172.17.2.7:/var/lib/demisto2   29G  6.8G   23G  24% /var/lib/demisto
+```
 
 Step 4.3: now you can install with your .sh file downloaded from Master server
 - Then upload the .sh file you got to a new Host server.
 - Execute the .sh file to install
+```
 chmod +x demisto.sh
 sudo ./demisto.sh -- -y
+```
 - After the host was installed, it will connect back to XSOAR app server automatically, you don’t need to do anything. If the host belongs to a HA Group, it can be automatically registered under that HA Group as well.
 - If you do not see Host registered on XSOAR app server, the issue might be on network connectivity. So check if XSOAR app servers and XSOAR hosts can resolve each other’s hostname (use DNS or edit /etc/hosts file), and also check if any Firewall is blocking the connection between Host and Master server.
 
